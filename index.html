@@ -759,7 +759,7 @@ function colDensity(col) {
 function scheduleNotes() {
   if (!isPlaying || !audioCtx) return;
 
-  while (nextNoteTime < audioCtx.currentTime + 0.2) {
+  while (nextNoteTime < audioCtx.currentTime + 0.3) {
     const col = seqStep % 40;
     const density = pixelData ? colDensity(col) : 0;
     const r = rng();
@@ -808,7 +808,7 @@ function scheduleNotes() {
     seqStep++;
   }
 
-  schedulerId = requestAnimationFrame(scheduleNotes);
+  schedulerId = setTimeout(scheduleNotes, 100);
 }
 
 function startRadio() {
@@ -824,7 +824,7 @@ function startRadio() {
 
 function stopRadio() {
   isPlaying = false;
-  if (schedulerId) cancelAnimationFrame(schedulerId);
+  if (schedulerId) clearTimeout(schedulerId);
   schedulerId = null;
   updatePlayBtn();
   $('normieImg').classList.remove('active');
