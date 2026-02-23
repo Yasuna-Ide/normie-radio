@@ -60,7 +60,7 @@ Rate limit: 60 requests/minute per IP.
 ## Credits
 
 - **NORMIES** — On-chain generative faces by [@serc1n](https://x.com/serc1n) & [@yigitduman](https://x.com/yigitduman)
-- **NORMIES RADIO** — Built with the [NORMIES API](https://api.normies.art)
+- **NORMIES RADIO** — Built with the [Normies API](https://api.normies.art)
 
 ## License
 
