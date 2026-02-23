@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Normie Radio</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --on: #48494b;
+    --off: #e3e5e4;
+    --bg: #e3e5e4;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--on);
+    font-family: 'Space Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 32px 24px;
+    user-select: none;
+  }
+
+  header { text-align: center; margin-bottom: 28px; }
+
+  h1 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+
+  .sub {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    opacity: 0.5;
+    margin-top: 4px;
+  }
+
+  /* Radio card */
+  .radio-card {
+    width: 100%;
+    max-width: 400px;
+    border: 2px solid var(--on);
+    padding: 28px 24px;
+    text-align: center;
+    position: relative;
+  }
+
+  .normie-img {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 16px;
+    image-rendering: pixelated;
+    border: 2px solid var(--on);
+    opacity: 0.4;
+    transition: opacity 0.5s;
+  }
+  .normie-img.active { opacity: 1; }
+
+  .normie-name {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 20px;
+  }
+
+  /* Waveform visualizer */
+  .viz-wrap {
+    width: 100%;
+    height: 48px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .viz-wrap canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Transport */
+  .transport {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .play-btn {
+    width: 56px;
+    height: 56px;
+    border: 2px solid var(--on);
+    background: transparent;
+    color: var(--on);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    padding: 0;
+  }
+  .play-btn:hover { background: var(--on); color: var(--off); }
+
+  .play-icon {
+    width: 0; height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 16px solid var(--on);
+    margin-left: 3px;
+    transition: border-color 0.15s;
+  }
+  .play-btn:hover .play-icon { border-left-color: var(--off); }
+
+  .pause-icon {
+    display: flex;
+    gap: 4px;
+  }
+  .pause-icon span {
+    width: 4px;
+    height: 18px;
+    background: var(--on);
+    transition: background 0.15s;
+  }
+  .play-btn:hover .pause-icon span { background: var(--off); }
+
+  /* Volume */
+  .vol-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .vol-label {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.4;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px;
+    height: 4px;
+    background: rgba(72,73,75,0.2);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--on);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--on);
+    border: none;
+    cursor: pointer;
+  }
+
+  .divider {
+    width: 40px;
+    height: 2px;
+    background: var(--on);
+    margin: 0 auto 16px;
+    opacity: 0.15;
+  }
+
+  /* Mood tags */
+  .mood-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .mood-tag {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border: 1px solid var(--on);
+    opacity: 0.4;
+    text-transform: uppercase;
+  }
+
+  .trait-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+
+  .trait-tag {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border: 1px solid var(--on);
+    opacity: 0.5;
+    text-transform: uppercase;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  button, input[type="number"] {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    background: var(--on);
+    color: var(--off);
+    border: none;
+    padding: 8px 14px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.7; }
+  button:active { opacity: 0.5; }
+  button.outline {
+    background: transparent;
+    color: var(--on);
+    border: 1.5px solid var(--on);
+  }
+
+  input[type="number"] {
+    width: 72px;
+    text-align: center;
+    cursor: text;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .msg {
+    font-size: 10px;
+    opacity: 0.5;
+    margin-top: 12px;
+    height: 14px;
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  footer {
+    margin-top: 28px;
+    font-size: 9px;
+    opacity: 0.3;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .help-btn {
+    font-size: 11px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--on);
+    border: 1.5px solid var(--on);
+    opacity: 0.5;
+  }
+  .help-btn:hover { opacity: 1; }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(72, 73, 75, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 24px;
+    opacity: 1;
+    transition: opacity 0.3s;
+  }
+  .overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .overlay-card {
+    background: var(--off);
+    color: var(--on);
+    max-width: 480px;
+    width: 100%;
+    padding: 32px 28px;
+    border: 2px solid var(--on);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .overlay-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .overlay-section {
+    margin-bottom: 18px;
+  }
+  .overlay-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.6;
+  }
+  .overlay-text {
+    font-size: 11px;
+    line-height: 1.8;
+    letter-spacing: 0.04em;
+    opacity: 0.8;
+  }
+  .overlay-rule-row {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .overlay-rule-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+  .overlay-rule-desc {
+    font-size: 10px;
+    opacity: 0.7;
+    line-height: 1.6;
+  }
+  .overlay-close {
+    display: block;
+    margin: 24px auto 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: var(--on);
+    color: var(--off);
+    border: none;
+    padding: 10px 28px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .overlay-close:hover { opacity: 0.7; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Normie Radio</h1>
+  <div class="sub">Generative Ambient · On-Chain Faces</div>
+</header>
+
+<div class="radio-card">
+  <img class="normie-img" id="normieImg" alt="Normie" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+  <div class="normie-name" id="normieName">—</div>
+
+  <div class="viz-wrap">
+    <canvas id="vizCanvas"></canvas>
+  </div>
+
+  <div class="transport">
+    <div class="vol-wrap">
+      <div class="vol-label">Vol</div>
+      <input type="range" id="volume" min="0" max="100" value="60">
+    </div>
+    <button class="play-btn" id="playBtn">
+      <div class="play-icon" id="playIcon"></div>
+    </button>
+    <div class="vol-wrap" style="visibility:hidden">
+      <div class="vol-label">Vol</div>
+      <input type="range" min="0" max="100" value="60">
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="mood-row" id="moodTags"></div>
+  <div class="trait-tags" id="traits"></div>
+</div>
+
+<div class="controls">
+  <input type="number" id="tokenId" min="0" max="9999" value="0" placeholder="0–9999">
+  <button id="loadBtn">Tune</button>
+  <button id="randBtn" class="outline">Random</button>
+  <button id="helpBtn" class="help-btn outline">?</button>
+</div>
+
+<div class="msg" id="msg">Enter a Token ID to tune in</div>
+
+<footer>Normie Radio × Generative Music</footer>
+
+<div class="overlay hidden" id="overlay">
+  <div class="overlay-card">
+    <div class="overlay-title">Normie Radio</div>
+
+    <div class="overlay-section">
+      <div class="overlay-section-title">About</div>
+      <div class="overlay-text">
+        Each Normie's on-chain traits and pixel data are
+        translated into a unique generative ambient composition.
+        No two Normies sound the same. The music changes
+        subtly each day via a date-based seed.
+      </div>
+    </div>
+
+    <div class="overlay-section">
+      <div class="overlay-section-title">Trait → Sound Mapping</div>
+      <div style="margin-top: 8px">
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Type</div>
+          <div class="overlay-rule-desc">Scale — Human: Major, Cat: Pentatonic, Alien: Whole Tone, Agent: Minor</div>
+        </div>
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Age</div>
+          <div class="overlay-rule-desc">Tempo & octave — Young: fast/high, Old: slow/deep</div>
+        </div>
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Gender</div>
+          <div class="overlay-rule-desc">Pitch range — Male: low, Female: high, Non-Binary: wide</div>
+        </div>
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Hair Style</div>
+          <div class="overlay-rule-desc">Arpeggio pattern — each hairstyle plays a unique melodic sequence</div>
+        </div>
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Eyes</div>
+          <div class="overlay-rule-desc">Delay & echo — e.g. Glowing Eyes: deep echo, Narrow Eyes: dry</div>
+        </div>
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Facial Feature</div>
+          <div class="overlay-rule-desc">Harmonics & timbre — Blush: bright/few, Scar: dark/rich</div>
+        </div>
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Expression</div>
+          <div class="overlay-rule-desc">Reverb depth — Sad: spacious, Serious: tight</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay-section">
+      <div class="overlay-section-title">Pixel Data</div>
+      <div class="overlay-text">
+        The 40×40 bitmap is scanned column by column.
+        Pixel density in each column determines the probability
+        and pitch of notes — dense columns produce higher,
+        louder tones. The face's silhouette shapes the melody.
+      </div>
+    </div>
+
+    <div class="overlay-section">
+      <div class="overlay-section-title">Controls</div>
+      <div class="overlay-text">
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Tune</div>
+          <div class="overlay-rule-desc">Load a Normie by Token ID (0–9999)</div>
+        </div>
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Random</div>
+          <div class="overlay-rule-desc">Tune into a random Normie</div>
+        </div>
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Play / Pause</div>
+          <div class="overlay-rule-desc">Start or stop the generative music</div>
+        </div>
+        <div class="overlay-rule-row">
+          <div class="overlay-rule-label">Vol</div>
+          <div class="overlay-rule-desc">Adjust the master volume</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="overlay-close" id="overlayClose">Close</button>
+  </div>
+</div>
+
+<script>
+const API = 'https://api.normies.art';
+const $ = id => document.getElementById(id);
+
+// ── Seeded RNG ────────────────────────────────
+function mulberry32(seed) {
+  return function() {
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ── Scales & Music Data ───────────────────────
+const SCALES = {
+  major:      [0, 2, 4, 5, 7, 9, 11],
+  minor:      [0, 2, 3, 5, 7, 8, 10],
+  pentatonic: [0, 2, 4, 7, 9],
+  dorian:     [0, 2, 3, 5, 7, 9, 10],
+  wholetone:  [0, 2, 4, 6, 8, 10],
+  lydian:     [0, 2, 4, 6, 7, 9, 11],
+};
+
+const TYPE_CONFIG = {
+  Human:  { scale: 'major',      baseNote: 60, mood: 'Warm' },
+  Cat:    { scale: 'pentatonic', baseNote: 62, mood: 'Dreamy' },
+  Alien:  { scale: 'wholetone',  baseNote: 58, mood: 'Ethereal' },
+  Agent:  { scale: 'minor',      baseNote: 57, mood: 'Tense' },
+};
+
+const AGE_CONFIG = {
+  Young:       { tempoMult: 1.2, octaveShift: 1,  mood: 'Bright' },
+  'Middle-Aged': { tempoMult: 1.0, octaveShift: 0,  mood: 'Steady' },
+  Old:         { tempoMult: 0.7, octaveShift: -1, mood: 'Deep' },
+};
+
+const EXPRESSION_REVERB = {
+  'Neutral': 0.3, 'Slight Smile': 0.5, 'Serious': 0.2,
+  'Happy': 0.6, 'Surprised': 0.4, 'Angry': 0.15, 'Sad': 0.7,
+};
+
+const GENDER_RANGE = {
+  Male:         { low: -12, high: 5,  label: 'Low' },
+  Female:       { low: -2,  high: 10, label: 'High' },
+  'Non-Binary': { low: -6,  high: 8,  label: 'Wide' },
+};
+
+// Hair → arpeggio pattern (step offsets within a measure)
+const HAIR_PATTERNS = {
+  'Short Hair':    [0, 2, 4, 6],
+  'Long Hair':     [0, 1, 3, 5, 7],
+  'Curly Hair':    [0, 3, 1, 4, 2, 5],
+  'Straight Hair': [0, 2, 4, 2],
+  'Spiky Hair':    [0, 4, 1, 5, 2],
+  'Bald':          [0, 7],
+  'Buzz Cut':      [0, 2],
+  'Mohawk':        [0, 6, 1, 7],
+  'Ponytail':      [0, 1, 2, 3, 4, 5, 6],
+  'Pigtails':      [0, 4, 2, 6, 0, 5],
+  'Afro':          [0, 2, 4, 6, 3, 5, 7],
+  'Bob':           [0, 3, 5, 3],
+  'Braids':        [0, 1, 3, 1, 5, 3],
+  'Dreadlocks':    [0, 2, 5, 2, 7, 5],
+  'Side Part':     [0, 2, 5, 7],
+  'Bangs':         [0, 1, 0, 3, 0, 5],
+  'Messy Hair':    [0, 5, 2, 7, 1, 6, 3],
+  'Slicked Back':  [0, 4, 7, 4],
+  'Undercut':      [0, 3, 6, 3],
+  'Wavy Hair':     [0, 1, 3, 2, 4, 3, 5],
+  'Top Knot':      [0, 5, 3, 7],
+};
+const DEFAULT_PATTERN = [0, 2, 4, 6];
+
+// Eyes → delay feedback amount
+const EYES_DELAY = {
+  'Classic Shades': 0.4, 'Big Shades': 0.55, 'Small Shades': 0.3,
+  'Round Glasses': 0.5, 'Square Glasses': 0.35, 'Monocle': 0.6,
+  'Eye Patch': 0.2, 'Narrow Eyes': 0.15, 'Wide Eyes': 0.45,
+  'Wink': 0.25, 'Closed Eyes': 0.65, 'Glowing Eyes': 0.7,
+  'Laser Eyes': 0.1, 'Crying': 0.55,
+};
+
+// Facial Feature → harmonic brightness (how many overtones)
+const FACE_HARMONICS = {
+  'Full Beard': { harmonics: 5, brightness: 0.3 },
+  'Mustache': { harmonics: 4, brightness: 0.5 },
+  'Goatee': { harmonics: 3, brightness: 0.6 },
+  'Stubble': { harmonics: 3, brightness: 0.4 },
+  'Shadow Beard': { harmonics: 4, brightness: 0.35 },
+  'Clean Shaven': { harmonics: 2, brightness: 0.8 },
+  'Sideburns': { harmonics: 4, brightness: 0.45 },
+  'Scar': { harmonics: 6, brightness: 0.2 },
+  'Mole': { harmonics: 2, brightness: 0.7 },
+  'Freckles': { harmonics: 3, brightness: 0.75 },
+  'Dimples': { harmonics: 2, brightness: 0.85 },
+  'Wrinkles': { harmonics: 5, brightness: 0.25 },
+  'Tattoo': { harmonics: 6, brightness: 0.4 },
+  'Birthmark': { harmonics: 3, brightness: 0.6 },
+  'Piercing': { harmonics: 4, brightness: 0.55 },
+  'Blush': { harmonics: 2, brightness: 0.9 },
+  'Cleft Chin': { harmonics: 3, brightness: 0.5 },
+};
+const DEFAULT_HARMONICS = { harmonics: 3, brightness: 0.5 };
+
+// Accessory → percussion pattern (hits per 8-step cycle)
+const ACCESSORY_PERC = {
+  'Top Hat':      [1,0,0,0,1,0,0,0],
+  'Fedora':       [1,0,0,1,0,0,1,0],
+  'Cowboy Hat':   [1,0,1,0,0,1,0,0],
+  'Beanie':       [1,0,0,0,0,0,0,0],
+  'Headband':     [1,0,1,0,1,0,1,0],
+  'Crown':        [1,0,0,1,0,0,0,1],
+  'Bandana':      [1,1,0,0,1,1,0,0],
+  'Earring':      [0,0,1,0,0,0,1,0],
+  'Necklace':     [1,0,0,0,0,1,0,0],
+  'Bow Tie':      [1,0,1,0,0,0,0,0],
+  'Scarf':        [1,0,0,0,0,0,1,0],
+  'Mask':         [0,0,0,0,1,0,0,0],
+  'Sunglasses':   [0,1,0,0,0,1,0,0],
+  'Cigarette':    [0,0,0,1,0,0,0,1],
+  'Pipe':         [1,0,0,0,0,0,0,1],
+};
+const DEFAULT_PERC = [1,0,0,0,0,0,0,0];
+
+// ── Audio Engine ──────────────────────────────
+let audioCtx = null;
+let masterGain = null;
+let delayNode = null;
+let delayFeedback = null;
+let isPlaying = false;
+let pixelData = null;
+let currentTraits = [];
+let schedulerId = null;
+let nextNoteTime = 0;
+let seqStep = 0;
+let rng = null;
+
+// Music state derived from traits
+let scale = SCALES.major;
+let baseNote = 60;
+let tempoMs = 400;
+let octaveShift = 0;
+let reverbMix = 0.3;
+let genderRange = { low: -6, high: 10 };
+let arpPattern = DEFAULT_PATTERN;
+let delayAmount = 0.3;
+let harmonicConfig = DEFAULT_HARMONICS;
+let percPattern = DEFAULT_PERC;
+
+function midiToFreq(midi) {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.85;
+
+    // Delay/echo node
+    delayNode = audioCtx.createDelay(1.0);
+    delayNode.delayTime.value = 0.35;
+    delayFeedback = audioCtx.createGain();
+    delayFeedback.gain.value = delayAmount;
+
+    const delayFilter = audioCtx.createBiquadFilter();
+    delayFilter.type = 'lowpass';
+    delayFilter.frequency.value = 2000;
+
+    masterGain.connect(audioCtx.destination);
+    masterGain.connect(delayNode);
+    delayNode.connect(delayFilter);
+    delayFilter.connect(delayFeedback);
+    delayFeedback.connect(delayNode);
+    delayNode.connect(audioCtx.destination);
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playTone(freq, time, dur, vel, type) {
+  if (!audioCtx) return;
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.001, time);
+  g.gain.linearRampToValueAtTime(vel * 0.15, time + 0.04);
+  g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  g.connect(masterGain);
+
+  // Number of harmonics and brightness from Facial Feature
+  const numH = harmonicConfig.harmonics;
+  const bright = harmonicConfig.brightness;
+
+  for (let h = 1; h <= numH; h++) {
+    const osc = audioCtx.createOscillator();
+    osc.type = h === 1 ? (type || 'sine') : 'sine';
+    osc.frequency.setValueAtTime(freq * h, time);
+    const hg = audioCtx.createGain();
+    // Brightness controls how fast harmonics decay
+    hg.gain.value = Math.pow(bright, h - 1) / h;
+    osc.connect(hg);
+    hg.connect(g);
+    osc.start(time);
+    osc.stop(time + dur);
+  }
+}
+
+function playPad(freq, time, dur, vel) {
+  if (!audioCtx) return;
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.001, time);
+  g.gain.linearRampToValueAtTime(vel * 0.06, time + dur * 0.3);
+  g.gain.linearRampToValueAtTime(vel * 0.04, time + dur * 0.7);
+  g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  g.connect(masterGain);
+
+  ['sine', 'triangle'].forEach((type, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq * (1 + i * 0.002), time);
+    osc.connect(g);
+    osc.start(time);
+    osc.stop(time + dur);
+  });
+}
+
+function playPerc(time) {
+  if (!audioCtx) return;
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.08, time);
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+  g.connect(masterGain);
+
+  const osc = audioCtx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(800 + rng() * 2000, time);
+  osc.frequency.exponentialRampToValueAtTime(100, time + 0.06);
+  osc.connect(g);
+  osc.start(time);
+  osc.stop(time + 0.08);
+}
+
+function getScaleNote(degree) {
+  const oct = Math.floor(degree / scale.length);
+  const idx = ((degree % scale.length) + scale.length) % scale.length;
+  return baseNote + scale[idx] + oct * 12 + octaveShift * 12;
+}
+
+function colDensity(col) {
+  if (!pixelData) return 0;
+  let c = 0;
+  for (let y = 0; y < 40; y++) c += pixelData[y * 40 + col] === '1' ? 1 : 0;
+  return c / 40;
+}
+
+function scheduleNotes() {
+  if (!isPlaying || !audioCtx) return;
+
+  while (nextNoteTime < audioCtx.currentTime + 0.2) {
+    const col = seqStep % 40;
+    const density = pixelData ? colDensity(col) : 0;
+    const r = rng();
+
+    // Arpeggio index from Hair pattern
+    const arpIdx = seqStep % arpPattern.length;
+    const arpDeg = arpPattern[arpIdx];
+
+    // Melody: pixel density + arpeggio + gender range
+    if (density > 0.05 && r < 0.6 + density * 0.3) {
+      const rangeDeg = genderRange.low + density * (genderRange.high - genderRange.low);
+      const degree = Math.floor(rangeDeg) + arpDeg;
+      const midi = getScaleNote(degree);
+      const freq = midiToFreq(midi);
+      const dur = tempoMs / 1000 * (1.5 + rng() * 2);
+      const vel = 0.2 + density * 0.5;
+      playTone(freq, nextNoteTime, dur, vel, 'sine');
+    }
+
+    // Secondary voice: sparser, uses arp offset
+    if (density > 0.2 && r < 0.25) {
+      const degree = arpDeg + Math.floor(density * 6) + 5;
+      const midi = getScaleNote(degree);
+      const freq = midiToFreq(midi);
+      const dur = tempoMs / 1000 * (2 + rng() * 3);
+      playTone(freq, nextNoteTime + 0.1, dur, 0.12, 'triangle');
+    }
+
+    // Pad: every 8 steps
+    if (seqStep % 8 === 0) {
+      const padRoot = getScaleNote(Math.floor(rng() * 4) + genderRange.low);
+      const padDur = tempoMs / 1000 * 8;
+      playPad(midiToFreq(padRoot), nextNoteTime, padDur, 0.4 + density * 0.3);
+      playPad(midiToFreq(getScaleNote(2 + arpDeg)), nextNoteTime, padDur, 0.2);
+    }
+
+    // Bass: every 4 steps
+    if (seqStep % 4 === 0) {
+      const bassDeg = Math.floor(rng() * 3) + genderRange.low;
+      const bassMidi = getScaleNote(bassDeg) - 12;
+      const bassDur = tempoMs / 1000 * 4;
+      playTone(midiToFreq(bassMidi), nextNoteTime, bassDur, 0.15, 'sine');
+    }
+
+    nextNoteTime += tempoMs / 1000;
+    seqStep++;
+  }
+
+  schedulerId = requestAnimationFrame(scheduleNotes);
+}
+
+function startRadio() {
+  if (isPlaying) return;
+  initAudio();
+  isPlaying = true;
+  nextNoteTime = audioCtx.currentTime + 0.1;
+  seqStep = 0;
+  scheduleNotes();
+  updatePlayBtn();
+  $('normieImg').classList.add('active');
+}
+
+function stopRadio() {
+  isPlaying = false;
+  if (schedulerId) cancelAnimationFrame(schedulerId);
+  schedulerId = null;
+  updatePlayBtn();
+  $('normieImg').classList.remove('active');
+}
+
+function updatePlayBtn() {
+  const btn = $('playBtn');
+  if (isPlaying) {
+    btn.innerHTML = '<div class="pause-icon"><span></span><span></span></div>';
+  } else {
+    btn.innerHTML = '<div class="play-icon"></div>';
+  }
+}
+
+// ── Derive music params from traits ───────────
+function applyTraits(attributes) {
+  let type = 'Human', age = 'Middle-Aged', expression = 'Neutral';
+  let gender = 'Non-Binary', hair = '', eyes = '', face = '', accessory = '';
+
+  for (const a of attributes) {
+    if (a.trait_type === 'Type') type = a.value;
+    if (a.trait_type === 'Age') age = a.value;
+    if (a.trait_type === 'Expression') expression = a.value;
+    if (a.trait_type === 'Gender') gender = a.value;
+    if (a.trait_type === 'Hair Style') hair = a.value;
+    if (a.trait_type === 'Eyes') eyes = a.value;
+    if (a.trait_type === 'Facial Feature') face = a.value;
+    if (a.trait_type === 'Accessory') accessory = a.value;
+  }
+
+  // Type → scale + base note
+  const tc = TYPE_CONFIG[type] || TYPE_CONFIG.Human;
+  const ac = AGE_CONFIG[age] || AGE_CONFIG['Middle-Aged'];
+
+  scale = SCALES[tc.scale];
+  baseNote = tc.baseNote;
+  tempoMs = Math.round(400 / ac.tempoMult);
+  octaveShift = ac.octaveShift;
+  reverbMix = EXPRESSION_REVERB[expression] || 0.3;
+
+  // Gender → note range
+  genderRange = GENDER_RANGE[gender] || GENDER_RANGE['Non-Binary'];
+
+  // Hair → arpeggio
+  arpPattern = HAIR_PATTERNS[hair] || DEFAULT_PATTERN;
+
+  // Eyes → delay feedback
+  delayAmount = EYES_DELAY[eyes] || 0.3;
+  if (delayFeedback) delayFeedback.gain.value = delayAmount;
+  if (delayNode) delayNode.delayTime.value = 0.2 + delayAmount * 0.4;
+
+  // Facial Feature → harmonics
+  harmonicConfig = FACE_HARMONICS[face] || DEFAULT_HARMONICS;
+
+  // Accessory → percussion
+  percPattern = ACCESSORY_PERC[accessory] || DEFAULT_PERC;
+
+  // Mood tags
+  const moods = [tc.mood, ac.mood];
+  if (genderRange.label) moods.push(genderRange.label);
+  if (reverbMix > 0.5) moods.push('Spacious');
+  if (delayAmount > 0.5) moods.push('Echo');
+  if (harmonicConfig.brightness > 0.7) moods.push('Bright');
+  if (harmonicConfig.brightness < 0.3) moods.push('Dark');
+  if (tempoMs > 500) moods.push('Slow');
+  if (tempoMs < 350) moods.push('Flowing');
+  if (arpPattern.length > 5) moods.push('Complex');
+  if (percPattern.filter(v => v).length > 3) moods.push('Rhythmic');
+
+  $('moodTags').innerHTML = moods.map(m =>
+    `<div class="mood-tag">${m}</div>`
+  ).join('');
+}
+
+// ── Visualizer ────────────────────────────────
+const vizCanvas = $('vizCanvas');
+const vizCtx = vizCanvas.getContext('2d');
+let vizAnim = null;
+let analyser = null;
+
+function initViz() {
+  vizCanvas.width = vizCanvas.offsetWidth * 2;
+  vizCanvas.height = vizCanvas.offsetHeight * 2;
+
+  if (audioCtx && !analyser) {
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    masterGain.connect(analyser);
+  }
+}
+
+function drawViz() {
+  const w = vizCanvas.width, h = vizCanvas.height;
+  vizCtx.fillStyle = '#e3e5e4';
+  vizCtx.fillRect(0, 0, w, h);
+
+  if (analyser && isPlaying) {
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteTimeDomainData(data);
+
+    vizCtx.strokeStyle = '#48494b';
+    vizCtx.lineWidth = 1.5;
+    vizCtx.beginPath();
+
+    const sliceW = w / data.length;
+    let x = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = data[i] / 128.0;
+      const y = v * h / 2;
+      if (i === 0) vizCtx.moveTo(x, y);
+      else vizCtx.lineTo(x, y);
+      x += sliceW;
+    }
+    vizCtx.lineTo(w, h / 2);
+    vizCtx.stroke();
+  } else {
+    // Flat line
+    vizCtx.strokeStyle = 'rgba(72,73,75,0.15)';
+    vizCtx.lineWidth = 1;
+    vizCtx.beginPath();
+    vizCtx.moveTo(0, vizCanvas.height / 2);
+    vizCtx.lineTo(vizCanvas.width, vizCanvas.height / 2);
+    vizCtx.stroke();
+  }
+
+  vizAnim = requestAnimationFrame(drawViz);
+}
+
+// ── Load Normie ───────────────────────────────
+async function loadNormie(id) {
+  stopRadio();
+  $('msg').textContent = 'Tuning...';
+  $('traits').innerHTML = '';
+  $('moodTags').innerHTML = '';
+  pixelData = null;
+  currentTraits = [];
+
+  // Date seed + token for daily variation
+  const d = new Date();
+  const dateSeed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+  rng = mulberry32(dateSeed * 10000 + id);
+
+  try {
+    const [pRes, tRes] = await Promise.all([
+      fetch(`${API}/normie/${id}/pixels`),
+      fetch(`${API}/normie/${id}/traits`)
+    ]);
+
+    $('normieImg').src = `${API}/normie/${id}/image.png`;
+    $('normieName').textContent = `Normie #${id}`;
+
+    if (pRes.ok) {
+      pixelData = await pRes.text();
+    }
+
+    if (tRes.ok) {
+      const data = await tRes.json();
+      if (data.attributes) {
+        currentTraits = data.attributes;
+        $('traits').innerHTML = data.attributes.map(a =>
+          `<span class="trait-tag">${a.value}</span>`
+        ).join('');
+        applyTraits(data.attributes);
+      }
+    }
+
+    $('msg').textContent = `Normie #${id} · Press play`;
+  } catch (e) {
+    $('msg').textContent = e.message || 'Failed to load';
+  }
+}
+
+// ── Events ────────────────────────────────────
+const tokenInput = $('tokenId');
+
+$('loadBtn').addEventListener('click', () => {
+  const id = parseInt(tokenInput.value);
+  if (isNaN(id) || id < 0 || id > 9999) { $('msg').textContent = 'Enter 0–9999'; return; }
+  loadNormie(id);
+});
+tokenInput.addEventListener('keydown', e => { if (e.key === 'Enter') $('loadBtn').click(); });
+$('randBtn').addEventListener('click', () => {
+  const id = Math.floor(Math.random() * 10000);
+  tokenInput.value = id;
+  loadNormie(id);
+});
+
+$('playBtn').addEventListener('click', () => {
+  if (!pixelData) { $('msg').textContent = 'Load a Normie first'; return; }
+  if (isPlaying) {
+    stopRadio();
+    $('msg').textContent = 'Paused';
+  } else {
+    startRadio();
+    initViz();
+    $('msg').textContent = 'Now playing';
+  }
+});
+
+$('volume').addEventListener('input', (e) => {
+  if (masterGain) masterGain.gain.value = e.target.value / 100;
+});
+
+// Viz loop
+function startVizLoop() {
+  vizCanvas.width = vizCanvas.offsetWidth * 2;
+  vizCanvas.height = vizCanvas.offsetHeight * 2;
+  drawViz();
+}
+
+// Help overlay
+$('overlayClose').addEventListener('click', () => {
+  $('overlay').classList.add('hidden');
+});
+$('helpBtn').addEventListener('click', () => {
+  $('overlay').classList.remove('hidden');
+});
+
+// Init
+updatePlayBtn();
+startVizLoop();
+</script>
+</body>
+</html>
