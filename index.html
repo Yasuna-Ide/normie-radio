@@ -759,7 +759,7 @@ function colDensity(col) {
 function scheduleNotes() {
   if (!isPlaying || !audioCtx) return;
 
-  while (nextNoteTime < audioCtx.currentTime + 0.3) {
+  while (nextNoteTime < audioCtx.currentTime + 1.2) {
     const col = seqStep % 40;
     const density = pixelData ? colDensity(col) : 0;
     const r = rng();
